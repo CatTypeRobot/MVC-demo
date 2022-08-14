@@ -1,38 +1,73 @@
 import './app2.css'
 import $ from "jquery"
 
-const html = `
-    <section id="app2">
-        <ol class="tabBar">
-            <li>111</li>
-            <li>222</li>
-        </ol>
-        <ol class="tabContent">
-            <li><span>内容1</span></li>
-            <li><span>内容2</span></li>
-        </ol>
-    </section>
-`
-
-const $element = $(html).appendTo($('body>.page'))
-
-const $tabBar = $('#app2 .tabBar')
-const $tabContent = $('#app2 .tabContent')
+const eventBus = $(window)
 const localKey = 'app2.index'
-const index = localStorage.getItem(localKey) ?? 0
 
-$tabBar.on('click', 'li', (e) => {
-    const $li = $(e.currentTarget)
-    $li
-        .addClass("selected")
-        .siblings()
-        .removeClass("selected")
-    const index = $li.index()
-    localStorage.setItem(localKey, index)
-    $tabContent
-        .children()
-        .eq(index).addClass('active')
-        .siblings().removeClass('active')
-})
+const m = {
+    data: {
+        index: parseInt(localStorage.getItem(localKey)) || 0
+    },
+    // create() {},
+    // delete() {},
+    update(data) {
+        Object.assign(m.data, data)
+        eventBus.trigger('m:updated')
+        localStorage.setItem('index', m.data.index)
+    },
+    // get() {}
+}
 
-$tabBar.children().eq(index).trigger('click')
+const v = {
+    el: null,
+    html: (index) => {
+        return `
+        <div>
+            <ol class="tabBar">
+                <li class="${index === 0 ? 'selected' : ''}" data-index="0"><span>111</span></li>
+                <li class="${index === 1 ? 'selected' : ''}" data-index="1"><span>222</span></li>
+            </ol>
+            <ol class="tabContent">
+                <li class="${index === 0 ? 'active' : ''}"><span>内容1</span></li>
+                <li class="${index === 1 ? 'active' : ''}"><span>内容2</span></li>
+            </ol>
+        </div>
+`
+    },
+    init(container) {
+        v.el = $(container)
+    },
+    render(index) {
+        if (v.el.children.length !== 0) v.el.empty()
+        $(v.html(index)).appendTo(v.el)
+    }
+}
+
+const c = {
+    init(container) {
+        v.init(container)
+        v.render(m.data.index)
+        c.autoBindEvents()
+        eventBus.on('m:updated', () => {
+            v.render(m.data.index)
+        })
+    },
+    events : {
+        'click .tabBar li': 'change',
+    },
+    change(e) {
+        const index = parseInt(e.currentTarget.dataset.index)
+        m.update({index: index})
+    },
+    autoBindEvents() {
+        for (let key in c.events) {
+            const value = c[c.events[key]]
+            const spaceIndex = key.indexOf(' ')
+            const part1 = key.slice(0, spaceIndex)
+            const part2 = key.slice(spaceIndex + 1)
+            v.el.on(part1, part2, value)
+        }
+    }
+}
+
+export default c

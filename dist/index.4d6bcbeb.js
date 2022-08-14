@@ -538,9 +538,11 @@ var _globalCss = require("./global.css");
 var _app1Js = require("./app1.js");
 var _app1JsDefault = parcelHelpers.interopDefault(_app1Js);
 var _app2Js = require("./app2.js");
+var _app2JsDefault = parcelHelpers.interopDefault(_app2Js);
 var _app3Js = require("./app3.js");
 var _app4Js = require("./app4.js");
 (0, _app1JsDefault.default).init("#app1");
+(0, _app2JsDefault.default).init("#app2");
 
 },{"./reset.css":"8XPx9","./global.css":"11axS","./app1.js":"gMhIk","./app2.js":"alK4Z","./app3.js":"264pe","./app4.js":"6ZENx","@parcel/transformer-js/src/esmodule-helpers.js":"aZ75Z"}],"8XPx9":[function() {},{}],"11axS":[function() {},{}],"gMhIk":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
@@ -7406,34 +7408,77 @@ exports.export = function(dest, destName, get) {
 
 },{}],"7FkZd":[function() {},{}],"alK4Z":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
+parcelHelpers.defineInteropFlag(exports);
 var _app2Css = require("./app2.css");
 var _jquery = require("jquery");
 var _jqueryDefault = parcelHelpers.interopDefault(_jquery);
-const html = `
-    <section id="app2">
-        <ol class="tabBar">
-            <li>111</li>
-            <li>222</li>
-        </ol>
-        <ol class="tabContent">
-            <li><span>内容1</span></li>
-            <li><span>内容2</span></li>
-        </ol>
-    </section>
-`;
-const $element = (0, _jqueryDefault.default)(html).appendTo((0, _jqueryDefault.default)("body>.page"));
-const $tabBar = (0, _jqueryDefault.default)("#app2 .tabBar");
-const $tabContent = (0, _jqueryDefault.default)("#app2 .tabContent");
+const eventBus = (0, _jqueryDefault.default)(window);
 const localKey = "app2.index";
-const index = localStorage.getItem(localKey) ?? 0;
-$tabBar.on("click", "li", (e)=>{
-    const $li = (0, _jqueryDefault.default)(e.currentTarget);
-    $li.addClass("selected").siblings().removeClass("selected");
-    const index1 = $li.index();
-    localStorage.setItem(localKey, index1);
-    $tabContent.children().eq(index1).addClass("active").siblings().removeClass("active");
-});
-$tabBar.children().eq(index).trigger("click");
+const m = {
+    data: {
+        index: parseInt(localStorage.getItem(localKey)) || 0
+    },
+    // create() {},
+    // delete() {},
+    update (data) {
+        Object.assign(m.data, data);
+        eventBus.trigger("m:updated");
+        localStorage.setItem("index", m.data.index);
+    }
+};
+const v = {
+    el: null,
+    html: (index)=>{
+        return `
+        <div>
+            <ol class="tabBar">
+                <li class="${index === 0 ? "selected" : ""}" data-index="0"><span>111</span></li>
+                <li class="${index === 1 ? "selected" : ""}" data-index="1"><span>222</span></li>
+            </ol>
+            <ol class="tabContent">
+                <li class="${index === 0 ? "active" : ""}"><span>内容1</span></li>
+                <li class="${index === 1 ? "active" : ""}"><span>内容2</span></li>
+            </ol>
+        </div>
+`;
+    },
+    init (container) {
+        v.el = (0, _jqueryDefault.default)(container);
+    },
+    render (index) {
+        if (v.el.children.length !== 0) v.el.empty();
+        (0, _jqueryDefault.default)(v.html(index)).appendTo(v.el);
+    }
+};
+const c = {
+    init (container) {
+        v.init(container);
+        v.render(m.data.index);
+        c.autoBindEvents();
+        eventBus.on("m:updated", ()=>{
+            v.render(m.data.index);
+        });
+    },
+    events: {
+        "click .tabBar li": "change"
+    },
+    change (e) {
+        const index = parseInt(e.currentTarget.dataset.index);
+        m.update({
+            index: index
+        });
+    },
+    autoBindEvents () {
+        for(let key in c.events){
+            const value = c[c.events[key]];
+            const spaceIndex = key.indexOf(" ");
+            const part1 = key.slice(0, spaceIndex);
+            const part2 = key.slice(spaceIndex + 1);
+            v.el.on(part1, part2, value);
+        }
+    }
+};
+exports.default = c;
 
 },{"jquery":"hgMhh","@parcel/transformer-js/src/esmodule-helpers.js":"aZ75Z","./app2.css":"8RnuD"}],"8RnuD":[function() {},{}],"264pe":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
